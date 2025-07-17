@@ -9,25 +9,19 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // --- Middleware Setup ---
-// Enable Cross-Origin Resource Sharing (CORS) for all routes
-// This allows your frontend (running on a different origin) to make requests to this backend.
-app.use(cors());
-
-// Enable the Express app to parse JSON formatted request bodies
-app.use(express.json());
+app.use(cors());            // Enable CORS for all routes
+app.use(express.json());    // Parse JSON request bodies
 
 // --- Nodemailer Transporter Setup ---
-// This 'transporter' object is what will actually send the emails.
-// We configure it with our email service provider (Gmail) and our credentials.
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER, // Your email address from the .env file
-    pass: process.env.EMAIL_PASS, // Your generated App Password from the .env file
+    user: process.env.EMAIL_USER, // Your email address
+    pass: process.env.EMAIL_PASS, // App password
   },
 });
 
-// Optional: Verify that the transporter configuration is correct
+// Verify transporter config
 transporter.verify((error, success) => {
   if (error) {
     console.error('Error with email transporter configuration:', error);
@@ -36,22 +30,20 @@ transporter.verify((error, success) => {
   }
 });
 
-// --- API Endpoint for Handling Contact Form Submission ---
-// We define a POST route at '/api/contact'. The frontend will send its data here.
+// --- Contact Form Route ---
 app.post('/api/contact', (req, res) => {
-  // Destructure the form data from the request's body
   const { name, email, subject, message } = req.body;
 
-  // Basic validation to ensure all fields are present
+  // Validate fields
   if (!name || !email || !subject || !message) {
     return res.status(400).json({ message: 'All fields are required.' });
   }
 
-  // Define the email's content
+  // Define email options
   const mailOptions = {
-    from: "${name}" <${process.env.EMAIL_USER}>, // Use your email, but show the sender's name
-    to: process.env.EMAIL_USER,                      // The email address that will receive the form submission
-    subject: New Portfolio Contact: ${subject},     // Subject line of the email
+    from: `${name} <${process.env.EMAIL_USER}>`,
+    to: process.env.EMAIL_USER,
+    subject: `New Portfolio Contact: ${subject}`,
     html: `
       <h1>New Contact Form Submission</h1>
       <p><strong>Name:</strong> ${name}</p>
@@ -62,21 +54,18 @@ app.post('/api/contact', (req, res) => {
     `,
   };
 
-  // Use the transporter to send the email
+  // Send email
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.error('Error sending email:', error);
-      // Send a server error status back to the frontend
       return res.status(500).json({ message: 'Failed to send email. Please try again later.' });
     }
     console.log('Email sent successfully: ' + info.response);
-    // Send a success status back to the frontend
     res.status(200).json({ message: 'Email sent successfully!' });
   });
 });
 
-// --- Start the Server ---
-// This command starts the server and makes it listen for incoming requests on the specified port.
+// --- Start Server ---
 app.listen(port, () => {
-  console.log(Server is running on port: ${port});
+  console.log(`Server is running on port: ${port}`);
 });
